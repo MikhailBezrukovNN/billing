@@ -1,0 +1,73 @@
+﻿@page "/"
+@using billing.Models
+@using billing.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext dbContext
+
+<h1>Клиенты</h1>
+
+@if (clients == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    if (clients.Count == 0)
+    {
+        <p>Клиентов не найдено.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Номер договора</th>
+                    <th>Дата последнего обновления</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var client in clients)
+                {
+                    <tr>
+                        <td>@client.Name</td>
+                        <td>
+                            <input type="text" value="@client.Contract_Number" @oninput="@(e => client.Contract_Number = e.Value.ToString())" />
+                        </td>
+                        <td>@client.Last_Update?.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <button @onclick="() => Save(client)">Сохранить</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<Client> clients = new List<Client>(); // Инициализация списка
+
+    protected override async Task OnInitializedAsync()
+    {
+        clients = await dbContext.Clients.ToListAsync();
+    }
+
+    private async Task Save(Client client)
+    {
+        try
+        {
+            client.Last_Update = DateTime.Now;
+            dbContext.Clients.Update(client);
+            await dbContext.SaveChangesAsync();
+            await OnInitializedAsync(); // Перезагрузка данных
+        }
+        catch (Exception ex)
+        {
+            // Логируем исключение
+            Console.WriteLine($"Ошибка при сохранении: {ex.Message}");
+            // Отображаем сообщение об ошибке пользователю, если необходимо
+        }
+    }
+}
